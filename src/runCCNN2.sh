@@ -1,5 +1,4 @@
 #!/bin/bash
-echo $CUDA_HOME
 export PYTHONIOENCODING=UTF-8
 
 # manually set these base params
@@ -8,34 +7,25 @@ hn=`hostname`
 baseDir="/Users/christanner/research/DeepCoref/"
 brownDir="/home/ctanner/researchcode/DeepCoref/"
 
-#stoppingPoints=(0.401 0.41 0.42 0.43 0.44 0.45 0.46 0.47 0.48 0.49 0.501 0.51 0.52 0.53 0.55 0.57 0.601)
 stoppingPoints=(0.51)
-#stoppingPoints=(0.701 0.72 0.74 0.76 0.78 0.801 0.81 0.83 0.85 0.87 0.88 0.89 0.901 0.91)
-#stoppingPoints=(0.24 0.27 0.301 0.33 0.36 0.39 0.401 0.41 0.42 0.43 0.44 0.45 0.46 0.47 0.48 0.49 0.501 0.51 0.52 0.53 0.55 0.57 0.601 0.62 0.66 0.701 0.72 0.74 0.76 0.78 0.801 0.81)
-#stoppingPoints=(0.12 0.15 0.18 0.21 0.24 0.27 0.301 0.33 0.36 0.39 0.42 0.45 0.47 0.48 0.49 0.501 0.51 0.52 0.53 0.55 0.57 0.601 0.62 0.66 0.701 0.72 0.74 0.76 0.78 0.801 0.81)
+
 if [ ${me} = "ctanner" ]
 then
 	echo "[ ON BROWN NETWORK ]"
 	baseDir=${brownDir}
 	refDir=${refDirBrown}
-	echo $CUDA_HOME
 	if [ ${hn} = "titanx" ]
 	then
 		echo "*   ON TITAN!"
 		export CUDA_HOME=/usr/local/cuda/
 		export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
 		export PATH=${CUDA_HOME}/bin:${PATH}
-		echo ${CUDA_HOME}
-		echo ${LD_LIBRARY_PATH}
 	else
 		echo "*   ON THE GRID!"
 		source ~/researchcode/DeepCoref/venv/bin/activate
-		# export CUDA_HOME=/usr
 		export CUDA_HOME=/contrib/projects/cuda8.0
 		export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
 		export PATH=${CUDA_HOME}/bin:${PATH}
-    	echo ${CUDA_HOME}
-		echo ${LD_LIBRARY_PATH}
 	fi 
 fi
 
@@ -46,7 +36,7 @@ replacementsFile=${baseDir}"data/replacements.txt"
 charEmbeddingsFile=${baseDir}"data/charRandomEmbeddings.txt"
 allTokens=${baseDir}"data/allTokensFull.txt"
 
-hddcrpBaseFile=${11}
+hddcrpBaseFile=$9
 hddcrpFullFile=${baseDir}"data/"${hddcrpBaseFile}".WD.semeval.txt" # MAKE SURE THIS IS WHAT YOU WANT (gold vs predict)
 verbose="true"
 stanfordPath="/Users/christanner/research/libraries/stanford-corenlp-full-2017-06-09/"
@@ -55,9 +45,7 @@ dataDir=${baseDir}"data/"
 resultsDir=${baseDir}"results/"
 
 # glove params
-gWindowSize=6
-embeddingsBaseFile=${10}
-numEpochs=50
+embeddingsBaseFile=$8
 gloveOutput=${baseDir}"data/gloveEmbeddings."${embeddingsBaseFile}".txt"
 
 stoplistFile=${baseDir}"data/stopwords.txt"
@@ -69,36 +57,40 @@ embeddingsType="type"
 useECBTest=true
 device=$2
 numLayers=$3
-poolType=$4
-numEpochs=$5
-windowSize=$6
-numNegPerPos=$7
-batchSize=$8
-shuffleTraining=$9
-dropout=${12}
-CCNNOpt=${13}
-clusterMethod=${14}
-numFilters=${15}
-filterMultiplier=${16}
-# features
-featurePOS=${17}
-posType=${18}
+numEpochs=$4
+windowSize=$5
+numNegPerPos=$6
+batchSize=$7
+dropout=${10}
+CCNNOpt=${11}
+numFilters=${12}
+filterMultiplier=${13}
+
+# CCNN features
+featurePOS=${14}
+posType=${15}
 posEmbeddingsFile=${baseDir}"data/posEmbeddings100.txt"
-lemmaType=${19}
-dependencyType=${20}
-charType=${21}
-SSType=${22}
-SSwindowSize=${23}
-SSvectorSize=${24}
-SSlog=${25}
-devDir=${26}
-FFNNnumEpochs=${27}
-FFNNPosRatio=${28}
-FFNNOpt=${29}
+lemmaType=${16}
+dependencyType=${17}
+charType=${18}
+SSType=${19}
+SSwindowSize=${20}
+SSvectorSize=${21}
+SSlog="True"
+
+devDir=${22}
+FFNNnumEpochs=${23}
+FFNNPosRatio=${24}
+FFNNOpt=${25}
 
 stanOutputDir=${baseDir}"data/stanford_output/"
 
-echo "-------- params --------"
+# constants
+shuffleTraining="False"
+echo "------------------------"
+echo "         params         "
+echo "------------------------"
+echo "---- generic params ----"
 echo "corpus:" $1
 echo "useECBTest:" ${useECBTest}
 echo "stoplistFile:" $stoplistFile
@@ -107,7 +99,7 @@ echo "dataDir:" ${dataDir}
 echo "device:" ${device}
 echo "numLayers:" $numLayers
 echo "poolType:" $poolType
-echo "replacementsFile:" ${replacementsFile}
+echo "unified token-formatting file:" ${replacementsFile}
 echo "stitchMentions:" $stitchMentions
 echo "mentionsFile:" $mentionsFile
 echo "embeddingsBaseFile:" $embeddingsBaseFile
@@ -178,9 +170,8 @@ python3 -u CorefEngine.py --resultsDir=${resultsDir} --dataDir=${dataDir} \
 --FFNNOpt=${FFNNOpt}
 
 if [ "$useECBTest" = false ] ; then
-	echo "in here"
 	cd ${refDir}
-	goldFile=${baseDir}"data/gold.NS.WD.semeval.txt"
+	goldFile=${baseDir}"data/gold.WD.semeval.txt" # gold.NS.WD.semeval.txt"
 	shopt -s nullglob
 
 	for sp in "${stoppingPoints[@]}"
@@ -195,11 +186,3 @@ if [ "$useECBTest" = false ] ; then
 		rm -rf ${f}
 	done
 fi
-
-# writes GloVe embeddings from the parsed corpus' output ($allTokens)
-# cd "/Users/christanner/research/libraries/GloVe-master"
-# ./demo.sh ${allTokens} ${gWindowSize} ${embeddingSize} ${numEpochs} ${gloveOutput}
-# ./home/jrasley/set_cuda8_cudnn6.sh
-# export CUDA_HOME=/contrib/projects/cuda8.0
-# export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
-# export PATH=${CUDA_HOME}/bin:${PATH}

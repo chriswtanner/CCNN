@@ -14,6 +14,7 @@ import sys
 import functools
 import math
 from itertools import product
+
 class FFNN:
 	def __init__(self, args, corpus, helper, hddcrp_parsed, dev_pairs=None, dev_preds=None, testing_pairs=None, testing_preds=None):
 
@@ -174,10 +175,7 @@ class FFNN:
 				pred = dev_preds[_][0]
 				devPredictions[dev_pairs[_]] = pred
 				doc_id = ""
-				#if self.args.useECBTest:
 				doc_id = dm1[0]
-				#else:
-				#	doc_id = self.hddcrp_parsed.hm_idToHMention[dm1].doc_id
 				docDMPredictions[doc_id][(dm1,dm2)] = pred
 
 		# sanity check part 2: ensure all dev DMs are accounted for (that we have prediction values for all)
@@ -219,7 +217,7 @@ class FFNN:
 
 		if self.testingPairs == None and self.testingPreds == None: # read the file
 			# sanity check:
-			if self.args.useECBTest:
+			if self.args.testMentions.startsWith("ecb"):
 				print("* ERROR: we want to use ECBTest data, but we aren't passing it to FFNN")
 				exit(1)
 
@@ -251,7 +249,7 @@ class FFNN:
 				pred = self.testingPreds[_][0]
 				doc_id = 0
 				doc_id2 = 0
-				if self.args.useECBTest:
+				if self.args.testMentions.startsWith("ecb"):
 					doc_id = dm1[0]
 					doc_id2 = dm2[0]
 				else:
@@ -270,7 +268,7 @@ class FFNN:
 				predTestDMs.add(dm2) 
 
 		# sanity check: ensures we are working w/ all of the DMs
-		if self.args.useECBTest:
+		if self.args.testMentions.startsWith("ecb"):
 			for d in self.helper.testingDirs:
 				for doc in self.corpus.dirToDocs[d]:
 					for dm in self.corpus.docToDMs[doc]:
@@ -290,7 +288,7 @@ class FFNN:
 
 		goldenClusterID = 0
 		goldenSuperSet = {}
-		if self.args.useECBTest: # construct golden clusters
+		if self.args.testMentions.startsWith("ecb"): # construct golden clusters
 			for doc_id in docToHMPredictions.keys():
 				
 				# ensures we have all DMs
@@ -389,7 +387,7 @@ class FFNN:
 			for i in ourDocClusters.keys():
 
 				# if True, remove REFs which aren't in the gold set, then remove singletons
-				if self.ChoubeyFilter and not self.args.useECBTest:
+				if self.ChoubeyFilter and not self.args.testMentions.startsWith("ecb"):
 					newCluster = set()
 					for dm in ourDocClusters[i]:
 						muid = self.hddcrp_parsed.hm_idToHMention[dm].UID

@@ -29,7 +29,8 @@ def setCorefEngineParams():
 
 	# ECBParser
 	parser.add_argument("--corpusPath", help="the corpus dir")
-	parser.add_argument("--useECBTest", help="use the ECB test set or not", type=str2bool, nargs='?', default="f")
+	parser.add_argument("--testMentions", help="which mentions to evaluate: ecbdev, ecbtest, hddcrp")
+	#parser.add_argument("--useECBTest", help="use the ECB test set or not", type=str2bool, nargs='?', default="f")
 	parser.add_argument("--stoplistFile", help="stoplist file")
 	parser.add_argument("--replacementsFile", help="we replace all instances of these tokens which appear in our corpus -- this is to help standardize the format, useful for creating embeddings and running stanfordCoreNLP")
 	parser.add_argument("--mentionsFile", help="the subset of mentions we care about (usually just Events)")

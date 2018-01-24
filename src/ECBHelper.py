@@ -12,30 +12,15 @@ from random import randint
 class ECBHelper:
 
 	def __init__(self, args, corpus, hddcrp_parsed): # goldTruthFile, goldLegendFile, isVerbose):
-		#self.trainingDirs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,18,19,20,21,22]
-		#self.devDirs = [23,24,25]
 
-		self.nonTestingDirs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,18,19,20,21,22] #,23,24,25]
-		self.trainingDirs = []
-		self.devDirs = []
-		for _ in self.nonTestingDirs:
-			if _ >= args.devDir: # e.g., pass in "23" if you want the dev dirs to be 23-25
-				self.devDirs.append(_)
-			else:
-				self.trainingDirs.append(_)
-
-		# if we passed in one of the k-fold cross-validate ones, then let's make dev = all, training = none
-		if len(self.devDirs) == 0:
-			self.devDirs = self.nonTestingDirs
-			self.trainingDirs = []
+		self.trainingDirs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,18,19,20,21,22]
+		self.devDirs = [23,24,25]
+		self.testingDirs = [26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]
+		
 		print("trainingDirs:",str(self.trainingDirs))
 		print("devDirs:",str(self.devDirs))
+		print("testingDirs:",str(self.testingDirs))
 		
-		#self.trainingDirs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,18,19,20]
-		#self.devDirs = [21,22,23,24,25]
-		#self.testingDirs = [23,24,25]
-		self.testingDirs = [26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]
-
 		# sets passed-in params
 		self.corpus = corpus
 		self.isVerbose = args.verbose
@@ -101,7 +86,8 @@ class ECBHelper:
 		mentionTokens = set()
 		mentionTokens.update(self.getECBMentionTokens(self.trainingDirs))
 		mentionTokens.update(self.getECBMentionTokens(self.devDirs))
-		mentionTokens.update(self.getHDDCRPMentionTokens(self.hddcrp_parsed))
+		if self.hddcrp_parsed != None:
+			mentionTokens.update(self.getHDDCRPMentionTokens(self.hddcrp_parsed))
 		for t in mentionTokens:
 			if t.text not in stopwords and len(t.text) > 1:
 				mentionTypes.add(t.text)
@@ -1045,47 +1031,6 @@ class ECBHelper:
 #     CoNLL output files
 ##################################################
 ##################################################
-	# returns a hashmap of clusters (sets)
-	def constructCoNLLClustersFromFile(self, responseFile):
-		ret = defaultdict(set)
-		f = open(responseFile, 'r')
-		f.readline()
-		for line in f:
-			line = line.rstrip()
-			if line == "#end document":
-				break
-			_, dm, clusterID = line.rstrip().split()
-			clusterID = clusterID[1:-1]
-			ret[clusterID].add(dm)
-			#if clusterID in clusterToDMs.keys():
-			#	clusterToDMs[clusterID].add(dm)
-			#else:
-			#	tmp = set()
-			#	tmp.add(dm)
-			#	clusterToDMs[clusterID] = tmp
-		return ret
-
-	# constructs Truth WD file; used for evaluating via the CoNLL scorer.pl
-	def writeCoNLLTruthFileWD(self, outputFile):
-		f = open(outputFile, 'w')
-		f.write("#begin document (t);\n")
-		refNum = 0
-		for d in self.corpus.dirToREFs:
-			if d < 26:
-				continue
-			for ref in self.corpus.dirToREFs[d]:
-				docsFoundSoFar = {}
-				for dm in self.corpus.refToDMs[ref]:
-					m = self.corpus.dmToMention[dm]
-					if m.doc_id not in docsFoundSoFar.keys():
-						docsFoundSoFar[m.doc_id] = refNum + 1
-						refNum += 1
-
-					clusterNum = docsFoundSoFar[m.doc_id]
-					f.write(str(m.dirNum) + "\t" + str(m.doc_id) + ";" + \
-						str(m.m_id) + "\t(" + str(clusterNum) + ")\n")
-		f.write("#end document\n")
-		f.close()
 
 	# constructs Truth CD file; used for evaluating via the CoNLL scorer.pl
 	def writeCoNLLTruthFileCD(self, outputFile):
@@ -1432,7 +1377,11 @@ class ECBHelper:
 				randEmb.append(random())
 			self.posToRandomEmbedding[pos] = randEmb
 
-		# following line should be commented out when we're creating a POS/LEMMA/etc file, before we have the embeddings
+		# NOTE: loads the following embeddings; thus
+		# when we wish to create a new POS/CHAR EMBEDDINGS FILE, the
+		# following line should be commented out, since we don't have anything to load
 		self.loadPOSEmbeddings(self.args.posEmbeddingsFile)
-		# self.loadLemmaEmbeddings(self.args.lemmaEmbeddingsFile)
 		self.loadCharacterEmbeddings(self.args.charEmbeddingsFile)
+		if self.args.SSType != "none":
+			self.createSemanticSpaceSimVectors() # generates word embeddings for each mention, via semantic space representations
+		

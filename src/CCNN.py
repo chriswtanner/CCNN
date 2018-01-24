@@ -615,18 +615,6 @@ class CCNN:
             fouttest.write(str(hm1) + "," + str(hm2) + "," + str(testing_preds[_][0]) + "\n")
         fouttest.close()
 
-    def writeCoNLLPerlFile(self, fileOut, clusters):
-        # writes WD file
-        f = open(fileOut, 'w')
-        f.write("#begin document (t);\n")
-        for clusterID in clusters.keys():
-            for dm in clusters[clusterID]:
-                (doc_id,m_id) = dm
-                dirNum = doc_id[0:doc_id.find("_")]
-                f.write(str(dirNum) + "\t" + str(doc_id) + ";" + str(m_id) + \
-                    "\t(" + str(clusterID) + ")\n")
-        f.write("#end document (t);\n")
-
     # trains and tests the model
     def run(self):
 
@@ -648,10 +636,15 @@ class CCNN:
         training_pairs, training_data, training_rel, training_labels = self.createData("train", self.helper.trainingDirs)
         dev_pairs, dev_data, dev_rel, dev_labels = self.createData("dev", self.helper.devDirs)
         
-        if self.args.useECBTest:
+        # regardless if it's ecbdev set or ecbtest set,
+        # we want to load the testingDirs because that variable has been accordingly, properly assigned
+        if self.args.testMentions.startsWith("ecb"): # could be ecbdev or ecbtest
             testing_pairs, testing_data, testing_rel, testing_labels = self.createData("test", self.helper.testingDirs)
-        else:
+        elif self.args.testMentions == "hddcrp"::
             testing_pairs, testing_data, testing_rel, testing_labels = self.createData("hddcrp")
+        else:
+            print("ERROR: args.testMentions should be ecbdev, ecbtest, or hddcrp")
+            exit(1)
 
         print("* training data shape:",str(training_data.shape))
         print("* dev data shape:",str(dev_data.shape))
@@ -767,12 +760,6 @@ class CCNN:
             bestProb_test = self.compute_optimal_f1("testing", bestProb_dev, testing_preds, testing_labels)
             print("test acc:", str(self.compute_accuracy(bestProb_test, testing_preds, testing_labels)))
             print("testing size:", str(len(testing_data)))
-
-        #if not self.args.useECBTest:
-        #    self.printSubstringTable(testing_pairs, testing_preds, bestProb_test)
-
-        # TMP: remove this after i have tested if K-fold helps and is needed
-        #self.writePredictionsToFile(dev_pairs, dev_preds, testing_pairs, testing_preds)
 
         return (dev_pairs, dev_preds, testing_pairs, testing_preds)
         
